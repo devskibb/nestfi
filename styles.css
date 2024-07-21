@@ -1,0 +1,198 @@
+body {
+    font-family: 'Poppins', Arial, sans-serif;
+    background-color: #ffe4e1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    color: #333;
+    overflow: hidden; /* Ensure no scroll bars appear */
+}
+
+.container {
+    text-align: center;
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    width: 300px; /* Reduce width for a more compact layout */
+    max-width: 90%; /* Ensures it scales on smaller screens */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 10; /* Ensure it stays above the leaves */
+}
+
+h1 {
+    margin-bottom: 3px;
+    font-size: 18px; /* Smaller font size */
+    color: #ff6f61;
+}
+
+button {
+    padding: 6px 10px; /* Smaller padding */
+    font-size: 12px; /* Smaller font size */
+    cursor: pointer;
+    background-color: #ff6f61;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    width: auto; /* Auto width */
+    margin: 5px 0; /* Consistent margin */
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}
+
+button:hover {
+    background-color: #e85a50;
+    transform: translateY(-1px);
+}
+
+button:active {
+    background-color: #d94e45;
+    transform: translateY(0);
+}
+
+#connect-button {
+    position: absolute; /* Absolute positioning */
+    top: 10px;
+    left: 10px;
+}
+
+#wallet-address {
+    margin-bottom: 10px;
+    font-size: 10px; /* Smaller font size */
+    color: #666;
+    word-break: break-word;
+}
+
+.stats {
+    font-size: 14px; /* Smaller font size */
+    line-height: 1.2; /* Adjust line height */
+    width: 100%; /* Make stats full width of the container */
+}
+
+.stats p {
+    margin: 6px 0; /* Smaller margin */
+    padding: 2px; /* Smaller padding */
+    background: #ffe4e1;
+    border-radius: 5px;
+    border: 1px solid #f0c4c3;
+    transition: background 0.3s ease, border 0.3s ease;
+}
+
+.stats p:hover {
+    background: #fdd7d6;
+    border: 1px solid #eab5b5;
+}
+
+.stats span {
+    font-weight: bold;
+    color: #2d3748;
+}
+
+#mascot {
+    width: 60px; /* Smaller width */
+    margin-bottom: 0px;
+}
+
+.actions {
+    margin-top: 20px;
+    width: 100%;
+}
+
+.action-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.action-group input {
+    padding: 4px;
+    font-size: 12px;
+    width: calc(60% - 10px); /* Adjust width to be next to the button */
+    margin-right: 10px; /* Space between input and button */
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box; /* Ensure padding is included in width */
+}
+
+.action-group button {
+    width: calc(40% - 10px); /* Adjust width to fit next to the input */
+}
+
+.leaf {
+    position: fixed;
+    top: -10%;
+    width: 50px;
+    height: 50px;
+    background-image: url('/leaf.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    animation: fall linear infinite;
+    z-index: 0; /* Ensure leaves are behind the container */
+}
+
+@keyframes fall {
+    to {
+        transform: translateY(110vh) rotate(360deg);
+    }
+}
+
+.tree-top-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 150px;
+    overflow: hidden;
+    pointer-events: none; /* Make sure the treetops do not interfere with user interactions */
+    z-index: 1; /* Send the container to the background */
+}
+
+.tree-top {
+    position: absolute;
+    top: 0;
+    width: 200px; /* Base width, can be varied */
+    transform-origin: center bottom;
+    animation: sway 5s ease-in-out infinite alternate, breathe 6s ease-in-out infinite alternate;
+}
+
+@keyframes sway {
+    0% { transform: rotate(-10deg); }
+    100% { transform: rotate(10deg); }
+}
+
+@keyframes breathe {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.08); }
+}
+
+.mute-button {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 20; /* Ensure it's above other elements */
+}
+
+
+.leaf:nth-child(1) { left: 10%; animation-duration: 6s; animation-delay: 0s; }
+.leaf:nth-child(2) { left: 20%; animation-duration: 10s; animation-delay: 2s; }
+.leaf:nth-child(3) { left: 30%; animation-duration: 9s; animation-delay: 4s; }
+.leaf:nth-child(4) { left: 40%; animation-duration: 8s; animation-delay: 6s; }
+.leaf:nth-child(5) { left: 50%; animation-duration: 11s; animation-delay: 1s; }
+.leaf:nth-child(6) { left: 60%; animation-duration: 4s; animation-delay: 3s; }
+.leaf:nth-child(7) { left: 70%; animation-duration: 13s; animation-delay: 5s; }
+.leaf:nth-child(8) { left: 80%; animation-duration: 7s; animation-delay: 2s; }
+.leaf:nth-child(9) { left: 90%; animation-duration: 14s; animation-delay: 4s; }

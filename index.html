@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NestFi Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js@1.0.0-beta.37/dist/web3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.6.9/dist/ethers.umd.min.js"></script>
+    <script src="main.js" defer></script>
+</head>
+<body>
+    <div class="tree-top-container"></div>
+    <div class="leaf"></div>
+    <div class="leaf"></div>
+    <div class="leaf"></div>
+    <div class="leaf"></div>
+    <div class="leaf"></div>
+    <div class="leaf"></div>
+    <div class="leaf"></div>
+    <div class="leaf"></div>
+    <div class="leaf"></div>
+    <div class="leaf"></div>
+    <div class="leaf"></div>
+    <div class="leaf"></div>
+    <div class="leaf"></div>
+    <div class="leaf"></div>
+    <div class="container">
+        <button id="connect-button">Connect Wallet</button>
+        <img id="mascot" src="nestfi-mascot.png" alt="NestFi Mascot">
+        <h1 style="margin-bottom: 3px;">NestFi Dashboard</h1>
+        <p style="font-size: small; color: rgba(0, 0, 0, 0.6); margin-top: 0;">Make a nest egg!</p>
+        
+        <div id="wallet-address"></div>
+        <div class="stats">
+            <p>Total Deposits: <span id="total-deposits">0</span> USDC</p>
+            <p>Total Loans: <span id="total-loans">0</span> NEST</p>
+            <p>Your Deposits: <span id="user-deposits">0</span> USDC</p>
+            <p>Your Loans: <span id="user-loans">0</span> NEST</p>
+            <p>Estimated APR: <span id="estimated-apr">0</span>%</p>
+        </div>
+        <div class="actions">
+            <div class="action-group">
+                <input type="number" id="deposit-amount" placeholder="Deposit Amount" />
+                <button id="deposit-button">Deposit</button>
+            </div>
+            <div class="action-group">
+                <button id="approve-button">Approve</button>
+            </div>
+            <div class="action-group">
+                <input type="number" id="withdraw-amount" placeholder="Withdraw Amount" />
+                <button id="withdraw-button">Withdraw</button>
+            </div>
+            <div class="action-group">
+                <input type="number" id="borrow-amount" placeholder="Borrow Amount" />
+                <button id="borrow-button">Borrow</button>
+            </div>
+        </div>
+    </div>
+    <audio id="bird-audio" src="./birdAudio.wav" loop></audio>
+    <button id="mute-button" class="mute-button">🔊</button>
+    <script src="main.js"></script>
+</body>
+</html>
