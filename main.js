@@ -726,9 +726,7 @@ document.getElementById('connect-button').addEventListener('click', async () => 
             ];
             const usdcAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
             const usdcDecimals = 6;
-
-            const contract = new web3.eth.Contract(contractABI, contractAddress);
-            const usdc = new web3.eth.Contract([
+            const usdcABI = [
                 {
                     "constant": true,
                     "inputs": [{ "name": "owner", "type": "address" }, { "name": "spender", "type": "address" }],
@@ -747,7 +745,10 @@ document.getElementById('connect-button').addEventListener('click', async () => 
                     "stateMutability": "nonpayable",
                     "type": "function"
                 }
-            ], usdcAddress);
+            ];
+
+            const contract = new web3.eth.Contract(contractABI, contractAddress);
+            const usdcContract = new web3.eth.Contract(usdcABI, usdcAddress);
 
             async function updateAllowance() {
                 if (!userAddress) {
@@ -755,8 +756,9 @@ document.getElementById('connect-button').addEventListener('click', async () => 
                     return;
                 }
 
-                const allowance = await usdc.methods.allowance(userAddress, contractAddress).call();
+                const allowance = await usdcContract.methods.allowance(userAddress, contractAddress).call();
                 const depositAmount = document.getElementById('deposit-amount').value * (10 ** usdcDecimals);
+
                 if (parseInt(allowance) >= depositAmount) {
                     document.getElementById('approve-button').style.display = 'none';
                 } else {
@@ -766,7 +768,13 @@ document.getElementById('connect-button').addEventListener('click', async () => 
 
             document.getElementById('approve-button').addEventListener('click', async () => {
                 const depositAmount = document.getElementById('deposit-amount').value * (10 ** usdcDecimals);
-                await usdc.methods.approve(contractAddress, depositAmount).send({ from: userAddress });
+                await usdcContract.methods.approve(contractAddress, depositAmount).send({ from: userAddress });
+                updateAllowance();
+            });
+
+            document.getElementById('approve-button').addEventListener('click', async () => {
+                const depositAmount = document.getElementById('deposit-amount').value * (10 ** usdcDecimals);
+                await usdcContract.methods.approve(contractAddress, depositAmount).send({ from: userAddress });
                 updateAllowance();
             });
 
@@ -849,14 +857,6 @@ async function updateAllowance() {
         document.getElementById('approve-button').style.display = 'none';
         return;
     }
-
-    const allowance = await usdc.methods.allowance(userAddress, contractAddress).call();
-    const depositAmount = document.getElementById('deposit-amount').value * (10 ** usdcDecimals);
-    if (parseInt(allowance) >= depositAmount) {
-        document.getElementById('approve-button').style.display = 'none';
-    } else {
-        document.getElementById('approve-button').style.display = 'inline-block';
-    }
 }
 
 async function estimateAPY(lendingPool, asset) {
@@ -893,6 +893,8 @@ document.getElementById('deposit-amount').addEventListener('input', updateAllowa
 document.addEventListener('DOMContentLoaded', updateAllowance);
 
 document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('deposit-amount').addEventListener('input', updateAllowance);
+
     const treeTopContainer = document.querySelector('.tree-top-container');
     const treeTopImageSrc = './treetop.png'; // Adjust the path to your treetop image
 
