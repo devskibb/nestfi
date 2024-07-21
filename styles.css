@@ -186,6 +186,29 @@ button:active {
     z-index: 20; /* Ensure it's above other elements */
 }
 
+@keyframes jiggle {
+    0%, 100% {
+      transform: rotate(0deg);
+    }
+    25% {
+      transform: rotate(3deg);
+    }
+    50% {
+      transform: rotate(-3deg);
+    }
+    75% {
+      transform: rotate(3deg);
+    }
+  }
+  
+  #mascot {
+    transition: transform 0.2s ease-in-out;
+  }
+  
+  #mascot.jiggle {
+    animation: jiggle 0.5s infinite;
+  }
+
 .leaf:nth-child(1) { left: 10%; animation-duration: 6s; animation-delay: 0s; }
 .leaf:nth-child(2) { left: 20%; animation-duration: 10s; animation-delay: 2s; }
 .leaf:nth-child(3) { left: 30%; animation-duration: 9s; animation-delay: 4s; }
