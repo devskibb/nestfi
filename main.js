@@ -1,4 +1,3 @@
-let userAddress = null;
 let web3 = null;
 
 document.getElementById('connect-button').addEventListener('click', async () => {
