@@ -186,7 +186,6 @@ button:active {
     z-index: 20; /* Ensure it's above other elements */
 }
 
-
 .leaf:nth-child(1) { left: 10%; animation-duration: 6s; animation-delay: 0s; }
 .leaf:nth-child(2) { left: 20%; animation-duration: 10s; animation-delay: 2s; }
 .leaf:nth-child(3) { left: 30%; animation-duration: 9s; animation-delay: 4s; }
