@@ -25,7 +25,7 @@ async function updateAllowance() {
     }
 }
 
-document.getElementById('connect-button').addEventListener('click', async () => {
+async function connectWallet() {
     if (window.ethereum) {
         try {
             const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -61,10 +61,6 @@ document.getElementById('connect-button').addEventListener('click', async () => 
             document.getElementById('borrow-button').addEventListener('click', async () => {
                 const borrowAmount = document.getElementById('borrow-amount').value * (10 ** usdcDecimals);
                 await contract.methods.borrow(borrowAmount).send({ from: userAddress });
-            });
-
-            document.getElementById('connect-button').addEventListener('click', () => {
-                window.location.reload(); // Reload the page to disconnect
             });
 
             await updateAllowance();
@@ -119,6 +115,30 @@ document.getElementById('connect-button').addEventListener('click', async () => 
     } else {
         alert('Please install MetaMask to use this feature.');
         document.getElementById('approve-button').style.display = 'none';
+    }
+}
+
+function disconnectWallet() {
+    userAddress = null;
+    web3 = null;
+    usdcContract = null;
+    contractAddress = null;
+
+    document.getElementById('wallet-address').innerText = '';
+    document.getElementById('connect-button').innerText = 'Connect';
+    document.getElementById('approve-button').style.display = 'none';
+    document.getElementById('total-deposits').innerText = '';
+    document.getElementById('total-loans').innerText = '';
+    document.getElementById('user-deposits').innerText = '';
+    document.getElementById('user-loans').innerText = '';
+    document.getElementById('estimated-apr').innerText = '';
+}
+
+document.getElementById('connect-button').addEventListener('click', () => {
+    if (userAddress) {
+        disconnectWallet();
+    } else {
+        connectWallet();
     }
 });
 
@@ -194,6 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
         birdAudio.muted = isMuted;
         muteButton.textContent = isMuted ? '🔇' : '🔊';
     });
+
     const mascot = document.getElementById('mascot');
 
     mascot.addEventListener('mouseover', () => {
