@@ -194,4 +194,13 @@ document.addEventListener('DOMContentLoaded', () => {
         birdAudio.muted = isMuted;
         muteButton.textContent = isMuted ? '🔇' : '🔊';
     });
+    const mascot = document.getElementById('mascot');
+
+    mascot.addEventListener('mouseover', () => {
+        mascot.classList.add('jiggle');
+    });
+
+    mascot.addEventListener('mouseleave', () => {
+        mascot.classList.remove('jiggle');
+    });
 });
