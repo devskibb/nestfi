@@ -24,6 +24,7 @@ async function updateAllowance() {
         document.getElementById('approve-button').style.display = 'inline-block';
     }
 }
+const usdcAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 
 async function connectWallet() {
     if (window.ethereum) {
@@ -36,7 +37,7 @@ async function connectWallet() {
 
             const contractABI = await loadABI('contractABI.json');
             const usdcABI = await loadABI('usdcABI.json');
-            contractAddress = '0x7d658ee428DcCB9dD722AA2CE03822322569E24b';
+            contractAddress = '0x4E21108c2bbff58bb288937Ea7a50D5c2eE0f569';
             const usdcAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 
             const contract = new web3.eth.Contract(contractABI, contractAddress);
@@ -51,63 +52,30 @@ async function connectWallet() {
             document.getElementById('deposit-button').addEventListener('click', async () => {
                 const depositAmount = document.getElementById('deposit-amount').value * (10 ** usdcDecimals);
                 await contract.methods.deposit(depositAmount).send({ from: userAddress });
+                updateDisplay();
             });
 
             document.getElementById('withdraw-button').addEventListener('click', async () => {
                 const withdrawAmount = document.getElementById('withdraw-amount').value * (10 ** usdcDecimals);
                 await contract.methods.withdraw(withdrawAmount).send({ from: userAddress });
+                updateDisplay();
             });
 
             document.getElementById('borrow-button').addEventListener('click', async () => {
                 const borrowAmount = document.getElementById('borrow-amount').value * (10 ** usdcDecimals);
                 await contract.methods.borrow(borrowAmount).send({ from: userAddress });
+                updateDisplay();
+            });
+
+            document.getElementById('auto-repay-button').addEventListener('click', async () => {
+                const nestToBurn = document.getElementById('nest-to-burn').value * (10 ** 6) || 0;
+                await contract.methods.autoRepay(nestToBurn).send({ from: userAddress });
+                updateDisplay();
             });
 
             await updateAllowance();
-
-            const aTokenAddress = '0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB';
-            const lendingPoolAddress = '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5';
-
-            const aToken = new web3.eth.Contract([{"constant":true,"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}], aTokenAddress);
-            const lendingPool = new web3.eth.Contract([
-                {
-                    "constant": true,
-                    "inputs": [{ "name": "_reserve", "type": "address" }],
-                    "name": "getReserveData",
-                    "outputs": [
-                        { "name": "configuration", "type": "uint256" },
-                        { "name": "liquidityIndex", "type": "uint128" },
-                        { "name": "variableBorrowIndex", "type": "uint128" },
-                        { "name": "currentLiquidityRate", "type": "uint128" },
-                        { "name": "currentVariableBorrowRate", "type": "uint128" },
-                        { "name": "currentStableBorrowRate", "type": "uint128" },
-                        { "name": "lastUpdateTimestamp", "type": "uint40" },
-                        { "name": "id", "type": "uint16" },
-                        { "name": "aTokenAddress", "type": "address" },
-                        { "name": "stableDebtTokenAddress", "type": "address" },
-                        { "name": "variableDebtTokenAddress", "type": "address" },
-                        { "name": "interestRateStrategyAddress", "type": "address" }
-                    ],
-                    "payable": false,
-                    "stateMutability": "view",
-                    "type": "function"
-                }
-            ], lendingPoolAddress);
-
-            const aTokenBalance = await aToken.methods.balanceOf(contractAddress).call();
-            const reserveData = await lendingPool.methods.getReserveData(usdcAddress).call();
-            const totalDeposits = await contract.methods.getTotalDeposits().call();
-
-            const userDeposits = await contract.methods.getDeposit(userAddress).call();
-            const userLoans = await contract.methods.getLoan(userAddress).call();
-
-            document.getElementById('total-deposits').innerText = (totalDeposits / (10 ** usdcDecimals)).toFixed(2);
-            document.getElementById('total-loans').innerText = web3.utils.fromWei(userLoans, 'mwei');
-            document.getElementById('user-deposits').innerText = web3.utils.fromWei(userDeposits, 'mwei');
-            document.getElementById('user-loans').innerText = web3.utils.fromWei(userLoans, 'mwei');
-            
-            const apr = await estimateAPY(lendingPool, usdcAddress);
-            document.getElementById('estimated-apr').innerText = apr.toFixed(2);
+            await updateDisplay();
+            setInterval(updateDisplay, 60000); // Update display every minute
 
         } catch (error) {
             console.error(error);
@@ -132,6 +100,8 @@ function disconnectWallet() {
     document.getElementById('user-deposits').innerText = '';
     document.getElementById('user-loans').innerText = '';
     document.getElementById('estimated-apr').innerText = '';
+    document.getElementById('usdc-balance').innerText = '';
+    document.getElementById('auto-repay-section').style.display = 'none';
 }
 
 document.getElementById('connect-button').addEventListener('click', () => {
@@ -153,21 +123,92 @@ async function estimateAPY(lendingPool, asset) {
         const reserveData = await lendingPool.methods.getReserveData(asset).call();
         console.log("Fetched reserve data:", reserveData);
 
-        const liquidityRate = reserveData.currentLiquidityRate;
-        console.log("Liquidity rate (in RAY):", liquidityRate);
+        // Correctly extract currentLiquidityRate from reserveData (index 2)
+        const currentLiquidityRate = reserveData[2];
+        console.log("Liquidity rate (in RAY):", currentLiquidityRate);
 
         // Convert from RAY format to decimal APR
-        const depositAPR = liquidityRate / RAY / 10; // This is fucking wrong and terrible but it works
+        const depositAPR = currentLiquidityRate / RAY;
         console.log("Converted deposit APR (decimal):", depositAPR);
 
-        // Return APY as a percentage with two decimal places
-        const supplyAPRPercentage = (depositAPR * 100);
-        console.log("Supply APR (percentage):", supplyAPRPercentage);
+        // Convert APR to APY using continuous compounding formula
+        const depositAPY = Math.pow((1 + depositAPR / SECONDS_PER_YEAR), SECONDS_PER_YEAR) - 1;
+        console.log("Converted deposit APY (decimal):", depositAPY);
 
-        return supplyAPRPercentage;
+        // Return APY as a percentage with two decimal places
+        const supplyAPYPercentage = depositAPY * 100;
+        console.log("Supply APY (percentage):", supplyAPYPercentage);
+
+        return supplyAPYPercentage;
     } catch (error) {
         console.error("Error fetching reserve data:", error);
         return "0.00"; // Return a default value in case of an error
+    }
+}
+
+
+async function updateDisplay() {
+    if (!web3 || !userAddress || !usdcContract || !contractAddress) return;
+
+    try {
+        const contractABI = await loadABI('contractABI.json');
+        const contract = new web3.eth.Contract(contractABI, contractAddress);
+        const aTokenAddress = '0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB';
+        const lendingPoolAddress = '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5';
+
+        const aToken = new web3.eth.Contract([{"constant":true,"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}], aTokenAddress);
+        const lendingPool = new web3.eth.Contract([
+            {
+                "constant": true,
+                "inputs": [{ "name": "_reserve", "type": "address" }],
+                "name": "getReserveData",
+                "outputs": [
+                    { "name": "configuration", "type": "uint256" },
+                    { "name": "liquidityIndex", "type": "uint128" },
+                    { "name": "variableBorrowIndex", "type": "uint128" },
+                    { "name": "currentLiquidityRate", "type": "uint128" },
+                    { "name": "currentVariableBorrowRate", "type": "uint128" },
+                    { "name": "currentStableBorrowRate", "type": "uint128" },
+                    { "name": "lastUpdateTimestamp", "type": "uint40" },
+                    { "name": "id", "type": "uint16" },
+                    { "name": "aTokenAddress", "type": "address" },
+                    { "name": "stableDebtTokenAddress", "type": "address" },
+                    { "name": "variableDebtTokenAddress", "type": "address" },
+                    { "name": "interestRateStrategyAddress", "type": "address" }
+                ],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ], lendingPoolAddress);
+
+        const aTokenBalance = await aToken.methods.balanceOf(contractAddress).call();
+        const reserveData = await lendingPool.methods.getReserveData(usdcAddress).call();
+        const totalDeposits = await contract.methods.getTotalDeposits().call();
+
+        const userDeposits = await contract.methods.getDeposit(userAddress).call();
+        const userLoans = await contract.methods.getLoan(userAddress).call();
+
+        document.getElementById('total-deposits').innerText = (totalDeposits / (10 ** usdcDecimals)).toFixed(2);
+        document.getElementById('total-loans').innerText = web3.utils.fromWei(userLoans, 'mwei');
+        document.getElementById('user-deposits').innerText = web3.utils.fromWei(userDeposits, 'mwei');
+        document.getElementById('user-loans').innerText = web3.utils.fromWei(userLoans, 'mwei');
+        
+        const apr = await estimateAPY(lendingPool, usdcAddress);
+        document.getElementById('estimated-apr').innerText = apr.toFixed(2);
+
+        const usdcBalance = await usdcContract.methods.balanceOf(userAddress).call();
+        const nestBalance = await contract.methods.balanceOf(userAddress).call();
+        document.getElementById('usdc-balance').innerText = `USDC Balance: ${(usdcBalance / (10 ** usdcDecimals)).toFixed(2)}`;
+        document.getElementById('nest-balance').innerText = `NEST Balance: ${(nestBalance / (10 ** usdcDecimals)).toFixed(2)}`;
+
+        if (parseInt(userLoans) > 0) {
+            document.getElementById('auto-repay-section').style.display = 'block';
+        } else {
+            document.getElementById('auto-repay-section').style.display = 'none';
+        }
+    } catch (error) {
+        console.error(error);
     }
 }
 
