@@ -128,6 +128,37 @@ button:active {
     width: calc(40% - 10px); /* Adjust width to fit next to the input */
 }
 
+.balance-text {
+    font-size: 10px;
+    color: #999;
+    margin-bottom: 5px;
+    width: 100%;
+    text-align: left;
+    margin-left: 5px; /* Add a little padding from the left */
+}
+
+#auto-repay-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+#auto-repay-group input {
+    padding: 4px;
+    font-size: 12px;
+    width: calc(60% - 10px); /* Adjust width to be next to the button */
+    margin-right: 10px; /* Space between input and button */
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box; /* Ensure padding is included in width */
+}
+
+#auto-repay-group button {
+    width: calc(40% - 10px); /* Adjust width to fit next to the input */
+}
+
 .leaf {
     position: fixed;
     top: -10%;
@@ -199,15 +230,15 @@ button:active {
     75% {
       transform: rotate(3deg);
     }
-  }
+}
   
-  #mascot {
+#mascot {
     transition: transform 0.2s ease-in-out;
-  }
+}
   
-  #mascot.jiggle {
+#mascot.jiggle {
     animation: jiggle 0.5s infinite;
-  }
+}
 
 .leaf:nth-child(1) { left: 10%; animation-duration: 6s; animation-delay: 0s; }
 .leaf:nth-child(2) { left: 20%; animation-duration: 10s; animation-delay: 2s; }
