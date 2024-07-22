@@ -38,9 +38,10 @@
             <p>Total Loans: <span id="total-loans">0</span> NEST</p>
             <p>Your Deposits: <span id="user-deposits">0</span> USDC</p>
             <p>Your Loans: <span id="user-loans">0</span> NEST</p>
-            <p>Estimated APR: <span id="estimated-apr">0</span>%</p>
+            <p>Estimated APY: <span id="estimated-apr">0</span>%</p>
         </div>
         <div class="actions">
+            <div id="usdc-balance" class="balance-text">USDC Balance: <span>0</span></div>
             <div class="action-group">
                 <input type="number" id="deposit-amount" placeholder="Deposit Amount" />
                 <button id="deposit-button">Deposit</button>
@@ -55,6 +56,13 @@
             <div class="action-group">
                 <input type="number" id="borrow-amount" placeholder="Borrow Amount" />
                 <button id="borrow-button">Borrow</button>
+            </div>
+            <div id="auto-repay-section" style="display: none;">
+                <div id="nest-balance" class="balance-text">NEST Balance: <span>0</span></div>
+                <div class="action-group">
+                    <input id="nest-to-burn" type="number" placeholder="NEST to burn (optional)" />
+                    <button id="auto-repay-button">Auto Repay</button>
+                </div>
             </div>
         </div>
     </div>
