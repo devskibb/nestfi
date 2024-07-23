@@ -37,7 +37,7 @@ contract NestFi is ERC20, Ownable {
     ILendingPool public lendingPool; // Instance of the Aave lending pool interface
     IAToken public aToken; // Instance of the Aave aToken (USDC aToken)
     uint256 public constant COLLAT_RATIO = 50; // Loan-to-value ratio set to 50%
-    uint256 public constant FEE_PERCENTAGE = 5; // Fee percentage (0.05%)
+    uint256 public constant YIELD_FEE_PERCENTAGE = 100; // 1% fee on yield (in basis points)
 
     // Struct to hold user information including deposit, loan amount, and liquidity index
     struct UserInfo {
@@ -119,19 +119,14 @@ contract NestFi is ERC20, Ownable {
         autoCompoundGlobal(); // Automatically compound yield before depositing
         updateUserYield(msg.sender); // Update user's yield before making a new deposit
 
-        uint256 fee = (amount * FEE_PERCENTAGE) / 10000; // Calculate the fee (0.05%)
-        uint256 depositAmount = amount - fee; // Amount to deposit into Aave
-
         stablecoin.transferFrom(msg.sender, address(this), amount); // Transfer stablecoins from the user to the contract
-        stablecoin.transfer(owner(), fee); // Transfer the fee to the contract owner
-
-        lendingPool.deposit(address(stablecoin), depositAmount, address(this), 0); // Deposit stablecoins into Aave
+        lendingPool.deposit(address(stablecoin), amount, address(this), 0); // Deposit stablecoins into Aave
 
         UserInfo storage user = users[msg.sender];
-        user.deposit += depositAmount; // Increase user's deposit balance
+        user.deposit += amount; // Increase user's deposit balance
         user.userLiquidityIndex = globalLiquidityIndex; // Update user's liquidity index
 
-        totalDeposits += depositAmount; // Update the total deposits
+        totalDeposits += amount; // Update the total deposits
 
         // Automatically repay loan if user has a loan
         if (user.loan > 0) {
@@ -209,8 +204,13 @@ contract NestFi is ERC20, Ownable {
         // Withdraw the accrued yield from Aave
         if (yield > 0) {
             lendingPool.withdraw(address(stablecoin), yield, address(this));
-            user.loan -= yield;
-            totalLoans -= yield; // Update the total loans
+            uint256 fee = (yield * YIELD_FEE_PERCENTAGE) / 10000; // Calculate the fee (1%)
+            uint256 yieldAfterFee = yield - fee;
+
+            stablecoin.transfer(owner(), fee); // Transfer the fee to the contract owner
+
+            user.loan -= yieldAfterFee;
+            totalLoans -= yieldAfterFee; // Update the total loans
         }
 
         uint256 remainingLoan = user.loan;
@@ -262,7 +262,11 @@ contract NestFi is ERC20, Ownable {
         UserInfo storage user = users[userAddr];
         uint256 yield = getAccruedYield(userAddr); // Get the accrued yield for the user
         if (yield > 0) {
-            user.deposit += yield; // Increase the user's deposit balance
+            uint256 fee = (yield * YIELD_FEE_PERCENTAGE) / 10000; // Calculate the fee (1%)
+            uint256 yieldAfterFee = yield - fee;
+
+            stablecoin.transfer(owner(), fee); // Transfer the fee to the contract owner
+            user.deposit += yieldAfterFee; // Increase the user's deposit balance
             user.userLiquidityIndex = globalLiquidityIndex; // Update user's liquidity index
         }
     }
