@@ -88,7 +88,7 @@ async function connectWallet() {
 
             await updateAllowance();
             await updateDisplay();
-            setInterval(updateDisplay, 60000); // Update display every minute
+            setInterval(updateDisplay, 10000); // Update display every minute
 
         } catch (error) {
             console.error(error);
