@@ -41,7 +41,7 @@ async function connectWallet() {
 
             const contractABI = await loadABI('contractABI.json');
             const usdcABI = await loadABI('usdcABI.json');
-            contractAddress = '0xE4f5D40012F7b3eA5f40BfF3d5a5512a1D4C508d';
+            contractAddress = '0x98368e1285f8B903B9DC4C1C5bC603ec0BFb4A1b';
 
             const contract = new web3.eth.Contract(contractABI, contractAddress);
             usdcContract = new web3.eth.Contract(usdcABI, usdcAddress);
@@ -188,6 +188,8 @@ async function updateDisplay() {
         document.getElementById('total-loans').innerText = web3.utils.fromWei(userLoans, 'mwei');
         document.getElementById('user-deposits').innerText = web3.utils.fromWei(userDeposits, 'mwei');
         document.getElementById('user-loans').innerText = web3.utils.fromWei(userLoans, 'mwei');
+        document.getElementById('accrued-yield').innerText = `Your Accrued Yield: ${(accruedYield / (10 ** 6)).toFixed(6)} USDC`;
+
         
         const apr = await estimateAPY(lendingPool, usdcAddress);
         document.getElementById('estimated-apr').innerText = apr.toFixed(2);
