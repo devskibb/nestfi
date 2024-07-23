@@ -37,7 +37,7 @@ async function connectWallet() {
 
             const contractABI = await loadABI('contractABI.json');
             const usdcABI = await loadABI('usdcABI.json');
-            contractAddress = '0x4E21108c2bbff58bb288937Ea7a50D5c2eE0f569';
+            contractAddress = '0xE4f5D40012F7b3eA5f40BfF3d5a5512a1D4C508d';
             const usdcAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 
             const contract = new web3.eth.Contract(contractABI, contractAddress);
@@ -155,32 +155,11 @@ async function updateDisplay() {
         const contract = new web3.eth.Contract(contractABI, contractAddress);
         const aTokenAddress = '0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB';
         const lendingPoolAddress = '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5';
+        const lendingPoolABI = await loadABI('lendingPoolABI.json');
+        const aTokenABI = await loadABI('aTokenABI.json');
 
-        const aToken = new web3.eth.Contract([{"constant":true,"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}], aTokenAddress);
-        const lendingPool = new web3.eth.Contract([
-            {
-                "constant": true,
-                "inputs": [{ "name": "_reserve", "type": "address" }],
-                "name": "getReserveData",
-                "outputs": [
-                    { "name": "configuration", "type": "uint256" },
-                    { "name": "liquidityIndex", "type": "uint128" },
-                    { "name": "variableBorrowIndex", "type": "uint128" },
-                    { "name": "currentLiquidityRate", "type": "uint128" },
-                    { "name": "currentVariableBorrowRate", "type": "uint128" },
-                    { "name": "currentStableBorrowRate", "type": "uint128" },
-                    { "name": "lastUpdateTimestamp", "type": "uint40" },
-                    { "name": "id", "type": "uint16" },
-                    { "name": "aTokenAddress", "type": "address" },
-                    { "name": "stableDebtTokenAddress", "type": "address" },
-                    { "name": "variableDebtTokenAddress", "type": "address" },
-                    { "name": "interestRateStrategyAddress", "type": "address" }
-                ],
-                "payable": false,
-                "stateMutability": "view",
-                "type": "function"
-            }
-        ], lendingPoolAddress);
+        const aToken = new web3.eth.Contract(aTokenABI, aTokenAddress);
+        const lendingPool = new web3.eth.Contract(lendingPoolABI, lendingPoolAddress);
 
         const aTokenBalance = await aToken.methods.balanceOf(contractAddress).call();
         const reserveData = await lendingPool.methods.getReserveData(usdcAddress).call();
@@ -188,6 +167,7 @@ async function updateDisplay() {
 
         const userDeposits = await contract.methods.getDeposit(userAddress).call();
         const userLoans = await contract.methods.getLoan(userAddress).call();
+        const accruedYield = await contract.methods.getAccruedYield(userAddress).call();
 
         document.getElementById('total-deposits').innerText = (totalDeposits / (10 ** usdcDecimals)).toFixed(2);
         document.getElementById('total-loans').innerText = web3.utils.fromWei(userLoans, 'mwei');
@@ -198,14 +178,23 @@ async function updateDisplay() {
         document.getElementById('estimated-apr').innerText = apr.toFixed(2);
 
         const usdcBalance = await usdcContract.methods.balanceOf(userAddress).call();
-        const nestBalance = await contract.methods.balanceOf(userAddress).call();
         document.getElementById('usdc-balance').innerText = `USDC Balance: ${(usdcBalance / (10 ** usdcDecimals)).toFixed(2)}`;
-        document.getElementById('nest-balance').innerText = `NEST Balance: ${(nestBalance / (10 ** usdcDecimals)).toFixed(2)}`;
+
+        const nestBalance = await contract.methods.balanceOf(userAddress).call();
+        document.getElementById('nest-balance').innerText = `NEST Balance: ${(nestBalance / (10 ** 6)).toFixed(2)}`;
 
         if (parseInt(userLoans) > 0) {
             document.getElementById('auto-repay-section').style.display = 'block';
         } else {
             document.getElementById('auto-repay-section').style.display = 'none';
+        }
+
+        if (parseInt(userDeposits) > 0) {
+            document.getElementById('accrued-yield').innerText = `Your Accrued Yield: ${(accruedYield / (10 ** 6)).toFixed(6)} USDC`;
+            document.getElementById('accrued-yield').style.display = 'block';
+        } else {
+            document.getElementById('accrued-yield').innerText = '';
+            document.getElementById('accrued-yield').style.display = 'none';
         }
     } catch (error) {
         console.error(error);
