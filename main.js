@@ -12,6 +12,7 @@ async function loadABI(filename) {
 async function updateAllowance() {
     if (!userAddress || !usdcContract || !contractAddress) {
         document.getElementById('approve-button').style.display = 'none';
+        document.getElementById('deposit-button').disabled = true; // Disable deposit button if approve button is hidden
         return;
     }
 
@@ -20,10 +21,13 @@ async function updateAllowance() {
 
     if (parseInt(allowance) >= depositAmount) {
         document.getElementById('approve-button').style.display = 'none';
+        document.getElementById('deposit-button').disabled = false; // Enable deposit button if approve button is hidden
     } else {
         document.getElementById('approve-button').style.display = 'inline-block';
+        document.getElementById('deposit-button').disabled = true; // Disable deposit button if approve button is visible
     }
 }
+
 const usdcAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 
 async function connectWallet() {
@@ -38,7 +42,6 @@ async function connectWallet() {
             const contractABI = await loadABI('contractABI.json');
             const usdcABI = await loadABI('usdcABI.json');
             contractAddress = '0xE4f5D40012F7b3eA5f40BfF3d5a5512a1D4C508d';
-            const usdcAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 
             const contract = new web3.eth.Contract(contractABI, contractAddress);
             usdcContract = new web3.eth.Contract(usdcABI, usdcAddress);
@@ -73,6 +76,16 @@ async function connectWallet() {
                 updateDisplay();
             });
 
+            document.getElementById('borrow-amount').addEventListener('input', () => {
+                const borrowAmount = document.getElementById('borrow-amount').value * (10 ** usdcDecimals);
+                const userDeposits = parseInt(document.getElementById('user-deposits').innerText) * (10 ** usdcDecimals);
+                if (borrowAmount > userDeposits) {
+                    document.getElementById('borrow-button').disabled = true; // Disable borrow button if borrow amount exceeds user deposits
+                } else {
+                    document.getElementById('borrow-button').disabled = false; // Enable borrow button if borrow amount is within user deposits
+                }
+            });
+
             await updateAllowance();
             await updateDisplay();
             setInterval(updateDisplay, 60000); // Update display every minute
@@ -95,6 +108,7 @@ function disconnectWallet() {
     document.getElementById('wallet-address').innerText = '';
     document.getElementById('connect-button').innerText = 'Connect';
     document.getElementById('approve-button').style.display = 'none';
+    document.getElementById('deposit-button').disabled = true;
     document.getElementById('total-deposits').innerText = '';
     document.getElementById('total-loans').innerText = '';
     document.getElementById('user-deposits').innerText = '';
@@ -102,6 +116,7 @@ function disconnectWallet() {
     document.getElementById('estimated-apr').innerText = '';
     document.getElementById('usdc-balance').innerText = '';
     document.getElementById('auto-repay-section').style.display = 'none';
+    document.getElementById('accrued-yield').style.display = 'none';
 }
 
 document.getElementById('connect-button').addEventListener('click', () => {
