@@ -41,7 +41,7 @@ async function connectWallet() {
 
             const contractABI = await loadABI('contractABI.json');
             const usdcABI = await loadABI('usdcABI.json');
-            contractAddress = '0x98368e1285f8B903B9DC4C1C5bC603ec0BFb4A1b';
+            contractAddress = '0xc4F169DF7047d82f7C3B6536e1fc31Ab2203e7D3';
 
             const contract = new web3.eth.Contract(contractABI, contractAddress);
             usdcContract = new web3.eth.Contract(usdcABI, usdcAddress);
