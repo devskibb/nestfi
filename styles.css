@@ -31,6 +31,28 @@ h1 {
     color: #ff6f61;
 }
 
+.nav-buttons {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    gap: 10px;
+}
+.nav-buttons button {
+    background-color: #ff6f61;
+    color: #fff;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-family: 'Poppins', sans-serif;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    z-index: 5;
+}
+.nav-buttons button:hover {
+    background-color: #e85a50;
+}
+
 button {
     padding: 6px 10px; /* Smaller padding */
     font-size: 12px; /* Smaller font size */
