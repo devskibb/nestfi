@@ -41,7 +41,7 @@ async function connectWallet() {
 
             const contractABI = await loadABI('contractABI.json');
             const usdcABI = await loadABI('usdcABI.json');
-            contractAddress = '0xc4F169DF7047d82f7C3B6536e1fc31Ab2203e7D3';
+            contractAddress = '0x8F99FE879051429F69a32C119c0850062C591f2b';
 
             const contract = new web3.eth.Contract(contractABI, contractAddress);
             usdcContract = new web3.eth.Contract(usdcABI, usdcAddress);
@@ -71,8 +71,13 @@ async function connectWallet() {
             });
 
             document.getElementById('auto-repay-button').addEventListener('click', async () => {
-                const nestToBurn = document.getElementById('nest-to-burn').value * (10 ** 6) || 0;
-                await contract.methods.autoRepay(nestToBurn).send({ from: userAddress });
+                await contract.methods.autoRepay(0).send({ from: userAddress });
+                updateDisplay();
+            });
+
+            document.getElementById('burn-nest-button').addEventListener('click', async () => {
+                const nestToBurn = document.getElementById('nest-to-burn').value * (10 ** 6);
+                await contract.methods.burnNestForUSDC(nestToBurn).send({ from: userAddress });
                 updateDisplay();
             });
 
@@ -88,7 +93,7 @@ async function connectWallet() {
 
             await updateAllowance();
             await updateDisplay();
-            setInterval(updateDisplay, 10000); // Update display every minute
+            setInterval(updateDisplay, 10000); // Update display every 10 seconds
 
         } catch (error) {
             console.error(error);
@@ -161,7 +166,6 @@ async function estimateAPY(lendingPool, asset) {
     }
 }
 
-
 async function updateDisplay() {
     if (!web3 || !userAddress || !usdcContract || !contractAddress) return;
 
@@ -190,7 +194,6 @@ async function updateDisplay() {
         document.getElementById('user-loans').innerText = web3.utils.fromWei(userLoans, 'mwei');
         document.getElementById('accrued-yield').innerText = `Your Accrued Yield: ${(accruedYield / (10 ** 6)).toFixed(6)} USDC`;
 
-        
         const apr = await estimateAPY(lendingPool, usdcAddress);
         document.getElementById('estimated-apr').innerText = apr.toFixed(2);
 
