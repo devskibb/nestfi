@@ -3,6 +3,30 @@
 		"inputs": [
 			{
 				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "approve",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
 				"name": "_stablecoin",
 				"type": "address"
 			},
@@ -154,30 +178,6 @@
 		"type": "event"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "spender",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
-			}
-		],
-		"name": "approve",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"inputs": [],
 		"name": "autoCompoundGlobal",
 		"outputs": [],
@@ -185,13 +185,7 @@
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "nestToBurn",
-				"type": "uint256"
-			}
-		],
+		"inputs": [],
 		"name": "autoRepay",
 		"outputs": [],
 		"stateMutability": "nonpayable",
@@ -218,10 +212,61 @@
 				"type": "uint256"
 			}
 		],
+		"name": "burnNestForUSDC",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
 		"name": "deposit",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "flashloan",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "borrower",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "fee",
+				"type": "uint256"
+			}
+		],
+		"name": "FlashloanExecuted",
+		"type": "event"
 	},
 	{
 		"anonymous": false,
@@ -274,6 +319,45 @@
 		],
 		"name": "ReserveDataRetrieved",
 		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "newCollatRatio",
+				"type": "uint256"
+			}
+		],
+		"name": "setCollatRatio",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "newFlashloanFeePercentage",
+				"type": "uint256"
+			}
+		],
+		"name": "setFlashloanFeePercentage",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "newYieldFeePercentage",
+				"type": "uint256"
+			}
+		],
+		"name": "setYieldFeePercentage",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
 	},
 	{
 		"inputs": [
@@ -463,7 +547,7 @@
 	},
 	{
 		"inputs": [],
-		"name": "FEE_PERCENTAGE",
+		"name": "FLASHLOAN_FEE_PERCENTAGE",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -711,6 +795,19 @@
 				"internalType": "uint128",
 				"name": "userLiquidityIndex",
 				"type": "uint128"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "YIELD_FEE_PERCENTAGE",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
