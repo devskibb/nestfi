@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title NestFi
@@ -32,12 +33,14 @@ interface IAToken {
     function balanceOf(address account) external view returns (uint256);
 }
 
-contract NestFi is ERC20, Ownable {
+contract NestFi is ERC20, Ownable, ReentrancyGuard {
     IERC20 public stablecoin; // Instance of the ERC20 token (USDC) used for deposits and withdrawals
     ILendingPool public lendingPool; // Instance of the Aave lending pool interface
     IAToken public aToken; // Instance of the Aave aToken (USDC aToken)
-    uint256 public constant COLLAT_RATIO = 50; // Loan-to-value ratio set to 50%
-    uint256 public constant YIELD_FEE_PERCENTAGE = 100; // 1% fee on yield (in basis points)
+    uint256 public COLLAT_RATIO = 50; // Loan-to-value ratio set to 50%
+    uint256 public YIELD_FEE_PERCENTAGE = 100; // 1% fee on yield (in basis points)
+    uint256 public FLASHLOAN_FEE_PERCENTAGE = 5; // 0.05% flashloan fee (in basis points)
+
 
     // Struct to hold user information including deposit, loan amount, and liquidity index
     struct UserInfo {
@@ -57,6 +60,7 @@ contract NestFi is ERC20, Ownable {
     // Events to log important actions
     event ReserveDataRetrieved(uint128 liquidityIndex);
     event InitializationFailed(string reason);
+    event FlashloanExecuted(address indexed borrower, uint256 amount, uint256 fee);
 
     /**
      * @dev Constructor to initialize the contract with stablecoin, lendingPool, and aToken addresses.
@@ -130,7 +134,7 @@ contract NestFi is ERC20, Ownable {
 
         // Automatically repay loan if user has a loan
         if (user.loan > 0) {
-            autoRepay(0); // Call autoRepay with 0 NEST tokens to burn, just using yield
+            autoRepay(); // Call autoRepay
         }
     }
 
@@ -139,13 +143,14 @@ contract NestFi is ERC20, Ownable {
      * Repays any required loan and updates the user's deposit, total deposits, and liquidity index.
      * @param amount The amount of stablecoins to withdraw
      */
-    function withdraw(uint256 amount) external {
+    function withdraw(uint256 amount) external nonReentrant {
         UserInfo storage user = users[msg.sender];
         
         require(user.deposit >= amount, "Insufficient deposit"); // Ensure the user has sufficient deposit
 
-        autoCompoundGlobal(); // Automatically compound yield before withdrawing
-        updateUserYield(msg.sender); // Update user's yield before making a withdrawal
+        if (user.loan > 0) {
+            autoRepay(); // Call autoRepay
+        }
 
         uint256 collateralAfterWithdrawal = user.deposit - amount; // Calculate remaining collateral after withdrawal
         uint256 maxLoanAmountAfterWithdrawal = (collateralAfterWithdrawal * COLLAT_RATIO) / 100; // Calculate maximum allowable loan amount
@@ -165,6 +170,8 @@ contract NestFi is ERC20, Ownable {
         user.userLiquidityIndex = globalLiquidityIndex; // Update user's liquidity index
 
         totalDeposits -= amount; // Update the total deposits
+        autoCompoundGlobal(); // Automatically compound yield AFTER withdrawing, in the event of pool cap being hit
+
     }
 
     /**
@@ -172,7 +179,7 @@ contract NestFi is ERC20, Ownable {
      * Updates the user's loan balance and total loans.
      * @param amount The amount of stablecoins to borrow
      */
-    function borrow(uint256 amount) external {
+    function borrow(uint256 amount) external nonReentrant {
         UserInfo storage user = users[msg.sender];
         autoCompoundGlobal();
         updateUserYield(msg.sender); // Update user's yield before borrowing
@@ -186,16 +193,45 @@ contract NestFi is ERC20, Ownable {
 
         // Automatically repay loan if user has a loan
         if (user.loan > 0) {
-            autoRepay(0); // Call autoRepay with 0 NEST tokens to burn, just using yield
+            autoRepay(); // Call autoRepay
         }
     }
 
     /**
-    * @dev Allows users to automatically repay their loan using accrued yield and optionally burn NEST tokens.
-    * Updates the user's loan balance, deposit balance, and total loans.
-    * @param nestToBurn The amount of NEST tokens the user wants to burn to repay the loan faster
+    * @dev Allows users to burn NEST tokens to repay their loan and withdraw USDC from the lending pool.
+    *
+    * Requirements:
+    * - The global yield must be compounded before any operations.
+    * - The caller must have enough NEST tokens to burn.
+    *
+    * @param amount The amount of NEST tokens to burn.
     */
-    function autoRepay(uint256 nestToBurn) public {
+    function burnNestForUSDC(uint256 amount) external nonReentrant {
+        autoCompoundGlobal(); // Ensure the global yield is compounded before proceeding
+
+        require(balanceOf(msg.sender) >= amount, "Not enough NEST tokens"); // Ensure user has enough NEST tokens to burn
+        UserInfo storage user = users[msg.sender];
+
+        uint256 amountToRepayLoan = amount > user.loan ? user.loan : amount;
+        uint256 amountToWithdraw = (amount - amountToRepayLoan) / 2; // Calculate the amount of USDC to withdraw for the excess NEST tokens
+
+        if (amountToRepayLoan > 0) {
+            _burn(msg.sender, amountToRepayLoan); // Burn the NEST tokens to repay the loan
+            user.loan -= amountToRepayLoan;
+            totalLoans -= amountToRepayLoan; // Update the total loans
+        }
+
+        if (amountToWithdraw > 0) {
+            lendingPool.withdraw(address(stablecoin), amountToWithdraw, address(this)); // Withdraw the corresponding amount of USDC from the lending pool
+            stablecoin.transfer(msg.sender, amountToWithdraw); // Transfer the USDC to the user
+        }
+    }
+
+    /**
+    * @dev Allows users to automatically repay their loan using accrued yield.
+    * Updates the user's loan balance and total loans.
+    */
+    function autoRepay() public {
         autoCompoundGlobal();
         UserInfo storage user = users[msg.sender];
 
@@ -211,17 +247,6 @@ contract NestFi is ERC20, Ownable {
 
             user.loan -= yieldAfterFee;
             totalLoans -= yieldAfterFee; // Update the total loans
-        }
-
-        uint256 remainingLoan = user.loan;
-
-        if (remainingLoan > 0) {
-            if (nestToBurn > 0) {
-                uint256 burnAmount = nestToBurn > remainingLoan ? remainingLoan : nestToBurn;
-                _burn(msg.sender, burnAmount);
-                user.loan -= burnAmount;
-                totalLoans -= burnAmount; // Update the total loans
-            }
 
             // Reset the user's accrued yield by updating the user's liquidity index
             user.userLiquidityIndex = globalLiquidityIndex;
@@ -233,7 +258,7 @@ contract NestFi is ERC20, Ownable {
      * @dev Automatically compounds the global yield by withdrawing and redepositing funds.
      * Updates the global liquidity index.
      */
-    function autoCompoundGlobal() public {
+    function autoCompoundGlobal() public nonReentrant {
         uint128 currentLiquidityIndex = getCurrentLiquidityIndex(); // Get the current liquidity index from Aave
         if (currentLiquidityIndex > globalLiquidityIndex) {
             // Withdraw the entire aToken balance
@@ -331,5 +356,56 @@ contract NestFi is ERC20, Ownable {
      */
     function getTotalLoans() external view returns (uint256) {
         return totalLoans;
+    }
+
+    /**
+     * @dev Allows users to perform a flashloan.
+     * The user must repay the full amount plus a 0.05% fee within the same transaction.
+     * @param amount The amount of USDC to flashloan.
+     */
+    function flashloan(uint256 amount) external nonReentrant {
+        // Calculate the fee (0.05%)
+        uint256 fee = (amount * FLASHLOAN_FEE_PERCENTAGE) / 10000;
+        uint256 totalRepayment = amount + fee;
+
+        // Withdraw the amount from the lending pool
+        lendingPool.withdraw(address(stablecoin), amount, address(this));
+        stablecoin.transfer(msg.sender, amount); // Transfer the USDC to the user
+
+        // Call the user's function to execute their logic with the flashloaned funds
+        (bool success, ) = msg.sender.call(abi.encodeWithSignature("executeOperation(uint256,uint256)", amount, fee));
+        require(success, "Flashloan execution failed");
+
+        // Ensure the user has repaid the full amount plus the fee
+        require(stablecoin.balanceOf(address(this)) >= totalRepayment, "Flashloan repayment failed");
+
+        // Re-deposit the total balance of stablecoins
+        lendingPool.deposit(address(stablecoin), stablecoin.balanceOf(address(this)), address(this), 0); // Deposit stablecoins into Aave
+
+        emit FlashloanExecuted(msg.sender, amount, fee);
+    }
+
+    /**
+     * @dev Sets a new value for the collateral ratio.
+     * @param newCollatRatio The new collateral ratio (in percentage).
+     */
+    function setCollatRatio(uint256 newCollatRatio) external onlyOwner {
+        COLLAT_RATIO = newCollatRatio;
+    }
+
+    /**
+     * @dev Sets a new value for the yield fee percentage.
+     * @param newYieldFeePercentage The new yield fee percentage (in basis points).
+     */
+    function setYieldFeePercentage(uint256 newYieldFeePercentage) external onlyOwner {
+        YIELD_FEE_PERCENTAGE = newYieldFeePercentage;
+    }
+
+    /**
+     * @dev Sets a new value for the flashloan fee percentage.
+     * @param newFlashloanFeePercentage The new flashloan fee percentage (in basis points).
+     */
+    function setFlashloanFeePercentage(uint256 newFlashloanFeePercentage) external onlyOwner {
+        FLASHLOAN_FEE_PERCENTAGE = newFlashloanFeePercentage;
     }
 }
