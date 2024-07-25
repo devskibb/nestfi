@@ -71,7 +71,7 @@ async function connectWallet() {
             });
 
             document.getElementById('auto-repay-button').addEventListener('click', async () => {
-                await contract.methods.autoRepay(0).send({ from: userAddress });
+                await contract.methods.autoRepay().send({ from: userAddress });
                 updateDisplay();
             });
 
